@@ -1,9 +1,2 @@
-# Frontend
-frontend/node_modules/
-frontend/.next/
-
-# Backend
-backend/bin/
-
-# Env
 .env
+firebase-service-account.json

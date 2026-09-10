@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"runtime/debug"
 
@@ -13,12 +14,17 @@ func Recovery() gin.HandlerFunc {
 		defer func() {
 			if err := recover(); err != nil {
 
+				// Print panic details to the server console
+				log.Printf("PANIC: %v", err)
 				debug.PrintStack()
 
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"success": false,
-					"error":   "Internal Server Error",
-				})
+				// Don't send another response if headers were already written
+				if !c.Writer.Written() {
+					c.JSON(http.StatusInternalServerError, gin.H{
+						"success": false,
+						"error":   "Internal Server Error",
+					})
+				}
 
 				c.Abort()
 			}

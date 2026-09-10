@@ -14,25 +14,23 @@ type Config struct {
 }
 
 func Load() *Config {
-
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found")
+		log.Println("No .env file found, using environment variables")
 	}
 
 	return &Config{
-		Port:  clean(getEnv("PORT", "8080")),
-		DBUri: clean(getEnv("MONGO_URI", "mongodb://localhost:27017")),
+		Port:  getEnv("PORT", "8080"),
+		DBUri: getEnv("MONGO_URI", "mongodb://localhost:27017"),
 	}
 }
 
-func getEnv(key, fallback string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
+func getEnv(key string, fallback string) string {
+	value := strings.TrimSpace(os.Getenv(key))
+
+	if value != "" {
+		return value
 	}
+
 	return fallback
-}
-
-func clean(val string) string {
-	return strings.TrimSpace(val)
 }
