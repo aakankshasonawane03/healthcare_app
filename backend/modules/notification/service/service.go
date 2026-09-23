@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/config"
+	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/config/database"
 	appointmentModel "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/appointment/model"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/notification/dto"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/notification/model"
@@ -57,19 +57,27 @@ func (s *Service) CreateNotification(
 		return nil, errors.New("invalid user ID")
 	}
 
+	var referenceID primitive.ObjectID
+	if req.ReferenceID != "" {
+		referenceID, err = primitive.ObjectIDFromHex(req.ReferenceID)
+		if err != nil {
+			return nil, errors.New("invalid reference ID")
+		}
+	}
+
 	notification := &model.Notification{
 		ID:          primitive.NewObjectID(),
 		UserID:      userID,
 		Title:       req.Title,
 		Message:     req.Message,
 		Type:        req.Type,
-		ReferenceID: req.ReferenceID,
+		ReferenceID: referenceID,
 		IsRead:      false,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
 
-	collection := config.GetCollection("notifications")
+	collection := database.GetCollection("notifications")
 
 	_, err = collection.InsertOne(ctx, notification)
 	if err != nil {
@@ -93,7 +101,7 @@ func (s *Service) GetUserNotifications(
 		return nil, errors.New("invalid user ID")
 	}
 
-	collection := config.GetCollection("notifications")
+	collection := database.GetCollection("notifications")
 
 	filter := bson.M{
 		"user_id": userObjID,
@@ -134,7 +142,7 @@ func (s *Service) GetUnreadNotifications(
 		return nil, errors.New("invalid user ID")
 	}
 
-	collection := config.GetCollection("notifications")
+	collection := database.GetCollection("notifications")
 
 	filter := bson.M{
 		"user_id": userObjID,
@@ -182,7 +190,7 @@ func (s *Service) MarkAsRead(
 		return errors.New("invalid user ID")
 	}
 
-	collection := config.GetCollection("notifications")
+	collection := database.GetCollection("notifications")
 
 	filter := bson.M{
 		"_id":     notificationObjID,
@@ -208,7 +216,7 @@ func (s *Service) MarkAsRead(
 
 	if result.MatchedCount == 0 {
 		return errors.New("notification not found")
-	}
+	} 
 
 	return nil
 }
@@ -227,7 +235,7 @@ func (s *Service) MarkAllAsRead(
 		return errors.New("invalid user ID")
 	}
 
-	collection := config.GetCollection("notifications")
+	collection := database.GetCollection("notifications")
 
 	filter := bson.M{
 		"user_id": userObjID,
@@ -270,7 +278,7 @@ func (s *Service) DeleteNotification(
 		return errors.New("invalid user ID")
 	}
 
-	collection := config.GetCollection("notifications")
+	collection := database.GetCollection("notifications")
 
 	filter := bson.M{
 		"_id":     notificationObjID,
@@ -312,7 +320,7 @@ func (s *Service) RegisterDeviceToken(
 		return errors.New("invalid user ID")
 	}
 
-	collection := config.GetCollection("device_tokens")
+	collection := database.GetCollection("device_tokens")
 
 	now := time.Now()
 
@@ -366,7 +374,7 @@ func (s *Service) SendPushNotification(
 		return errors.New("invalid user ID")
 	}
 
-	collection := config.GetCollection("device_tokens")
+	collection := database.GetCollection("device_tokens")
 
 	filter := bson.M{
 		"user_id":   userObjID,

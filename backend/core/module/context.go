@@ -6,6 +6,7 @@ import (
 
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/config"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/events"
+	notificationService "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/notification/service"
 )
 
 type ModuleContext struct {
@@ -15,4 +16,7 @@ type ModuleContext struct {
 
 	// Firebase Cloud Messaging client
 	FirebaseClient *messaging.Client
+
+	// Shared notification service
+	NotificationService *notificationService.Service
 }

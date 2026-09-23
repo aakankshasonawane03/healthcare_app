@@ -1,11 +1,11 @@
 package clinic
 
 import (
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
 	clinicHandler "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/clinic/handler"
 	clinicRepository "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/clinic/repository"
 	clinicService "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/clinic/service"
+	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/gin-gonic/gin"
 )
 

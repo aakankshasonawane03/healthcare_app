@@ -2,10 +2,12 @@ package clinic
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Clinic struct {
-	ID string `bson:"_id,omitempty" json:"id"`
+	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 
 	Name        string `bson:"name" json:"name" binding:"required"`
 	Address     string `bson:"address" json:"address" binding:"required"`

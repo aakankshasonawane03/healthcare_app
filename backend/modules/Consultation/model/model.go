@@ -1,4 +1,4 @@
-package consultation
+package model
 
 import (
 	"time"

@@ -57,7 +57,7 @@ func AuthMiddleware() gin.HandlerFunc {
 				"message": "Failed to read public key",
 			})
 			c.Abort()
-			return
+			return 
 		}
 
 		// 4. Parse RSA public key

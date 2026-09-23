@@ -3,10 +3,10 @@ package queue
 import (
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
 
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	queueHandler "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/queue/handler"
 	queueRepository "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/queue/repository"
 	queueService "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/queue/service"
+	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 
 	"github.com/gin-gonic/gin"
 )

@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Medicine struct {
@@ -12,13 +14,13 @@ type Medicine struct {
 }
 
 type Prescription struct {
-	ID string `bson:"_id,omitempty" json:"id"`
+	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 
-	ConsultationID string `bson:"consultation_id" json:"consultation_id"`
-	AppointmentID  string `bson:"appointment_id" json:"appointment_id"`
-	PatientID      string `bson:"patient_id" json:"patient_id"`
-	DoctorID       string `bson:"doctor_id" json:"doctor_id"`
-	ClinicID       string `bson:"clinic_id" json:"clinic_id"`
+	ConsultationID primitive.ObjectID `bson:"consultation_id" json:"consultation_id"`
+	AppointmentID  primitive.ObjectID `bson:"appointment_id" json:"appointment_id"`
+	PatientID      primitive.ObjectID `bson:"patient_id" json:"patient_id"`
+	DoctorID       primitive.ObjectID `bson:"doctor_id" json:"doctor_id"`
+	ClinicID       primitive.ObjectID `bson:"clinic_id" json:"clinic_id"`
 
 	Medicines []Medicine `bson:"medicines" json:"medicines"`
 

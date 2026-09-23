@@ -3,8 +3,8 @@ package prescription
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
+	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 
 	prescriptionHandler "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/prescription/handler"
 	prescriptionRepository "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/prescription/repository"

@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"log"
+	"net/url"
 	"time"
 
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/config"
@@ -13,12 +14,35 @@ import (
 var Client *mongo.Client
 var DB *mongo.Database
 
+func defaultDatabaseName(uri string) string {
+	if uri == "" {
+		return "healthcare"
+	}
+
+	parsed, err := url.Parse(uri)
+	if err == nil && parsed.Path != "" && parsed.Path != "/" {
+		name := parsed.Path
+		if len(name) > 0 && name[0] == '/' {
+			name = name[1:]
+		}
+		if name != "" {
+			return name
+		}
+	}
+
+	return "healthcare"
+}
+
 // Connect connects to MongoDB using the application configuration.
 func Connect(cfg *config.Config) *mongo.Database {
 	if cfg == nil {
 		cfg = &config.Config{
-			DBUri: "mongodb://localhost:27017",
+			DBUri: "mongodb://localhost:27017/healthcare",
 		}
+	}
+
+	if cfg.DBUri == "" {
+		cfg.DBUri = "mongodb://localhost:27017/healthcare"
 	}
 
 	ctx, cancel := context.WithTimeout(
@@ -39,10 +63,11 @@ func Connect(cfg *config.Config) *mongo.Database {
 		log.Fatalf("MongoDB ping failed: %v", err)
 	}
 
+	dbName := defaultDatabaseName(cfg.DBUri)
 	Client = client
-	DB = client.Database("healthcare")
+	DB = client.Database(dbName)
 
-	log.Println("MongoDB connected successfully")
+	log.Printf("MongoDB connected successfully to database: %s", dbName)
 
 	return DB
 }

@@ -29,10 +29,11 @@ func (m *Module) Init(
 	ctx *module.ModuleContext,
 ) error {
 
-	// Use Firebase client created by main.go
 	m.service = service.NewService(
 		ctx.FirebaseClient,
 	)
+
+	ctx.NotificationService = m.service
 
 	m.handler = handler.NewHandler(
 		m.service,

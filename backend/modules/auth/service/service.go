@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"errors"
-	// "os"
+	"os"
 	"strings"
 	"time"
 
@@ -46,27 +46,10 @@ func NewAuthService(
 	}
 }
 
-// ===============================
-// REGISTER
-// ===============================
-
 func (s *authService) Register(
 	ctx context.Context,
 	user *model.User,
 ) error {
-
-	// Validate user
-	if user == nil {
-		return errors.New("user data is required")
-	}
-
-	if strings.TrimSpace(user.Email) == "" {
-		return errors.New("email is required")
-	}
-
-	if strings.TrimSpace(user.Password) == "" {
-		return errors.New("password is required")
-	}
 
 	// Check if email already exists
 	existingUser, err := s.repository.FindByEmail(
@@ -90,35 +73,25 @@ func (s *authService) Register(
 
 	if err != nil {
 		return err
-	}
+	}//
 
-	// Generate MongoDB ObjectID
 	user.ID = primitive.NewObjectID()
 
-	// Store hashed password instead of plain password
 	user.Password = string(hashedPassword)
 
-	// Default role
-	if strings.TrimSpace(user.Role) == "" {
+	if user.Role == "" {
 		user.Role = "PATIENT"
 	}
 
-	// Default active status
 	user.IsActive = true
 
-	// Timestamps
 	now := time.Now()
 
 	user.CreatedAt = now
 	user.UpdatedAt = now
 
-	// Create user
 	return s.repository.Create(ctx, user)
 }
-
-// ===============================
-// LOGIN
-// ===============================
 
 func (s *authService) Login(
 	ctx context.Context,
@@ -126,24 +99,12 @@ func (s *authService) Login(
 	password string,
 ) (string, *model.User, error) {
 
-	email = strings.TrimSpace(email)
-
-	if email == "" {
-		return "", nil, errors.New("email is required")
-	}
-
-	if strings.TrimSpace(password) == "" {
-		return "", nil, errors.New("password is required")
-	}
-
-	// Find user by email
 	user, err := s.repository.FindByEmail(
 		ctx,
 		email,
 	)
 
 	if err != nil {
-
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return "", nil, errors.New("invalid email or password")
 		}
@@ -151,12 +112,10 @@ func (s *authService) Login(
 		return "", nil, err
 	}
 
-	// Check account status
 	if !user.IsActive {
 		return "", nil, errors.New("user account is inactive")
 	}
 
-	// Compare password with hashed password
 	err = bcrypt.CompareHashAndPassword(
 		[]byte(user.Password),
 		[]byte(password),
@@ -166,7 +125,6 @@ func (s *authService) Login(
 		return "", nil, errors.New("invalid email or password")
 	}
 
-	// Generate JWT
 	token, err := generateJWT(user)
 
 	if err != nil {
@@ -176,51 +134,28 @@ func (s *authService) Login(
 	return token, user, nil
 }
 
-// ===============================
-// GET USER BY ID
-// ===============================
-
 func (s *authService) GetUserByID(
 	ctx context.Context,
 	id primitive.ObjectID,
 ) (*model.User, error) {
 
-	return s.repository.FindByID(
-		ctx,
-		id,
-	)
+	return s.repository.FindByID(ctx, id)
 }
-
-// ===============================
-// GENERATE JWT
-// ===============================
 
 func generateJWT(user *model.User) (string, error) {
 
-	if user == nil {
-		return "", errors.New("user is required")
-	}
+	secret := os.Getenv("JWT_SECRET")
 
-	secret := strings.TrimSpace(
-		("JWT_SECRET"),
-	)
-
-	// Development fallback
 	if secret == "" {
 		secret = "sharkweb-secret-key"
 	}
-
-	now := time.Now()
 
 	claims := jwt.MapClaims{
 		"user_id": user.ID.Hex(),
 		"email":   user.Email,
 		"role":    user.Role,
-
-		"iat": now.Unix(),
-
-		// Token expires after 24 hours
-		"exp": now.Add(24 * time.Hour).Unix(),
+		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+		"iat":     time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(
@@ -229,6 +164,6 @@ func generateJWT(user *model.User) (string, error) {
 	)
 
 	return token.SignedString(
-		[]byte(secret),
+		[]byte(strings.TrimSpace(secret)),
 	)
 }

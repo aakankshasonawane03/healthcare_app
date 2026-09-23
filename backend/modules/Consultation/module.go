@@ -3,10 +3,10 @@ package Consultation
 import (
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
 
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	consultationHandler "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/Consultation/handler"
 	consultationRepository "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/Consultation/repository"
 	consultationService "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/Consultation/service"
+	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 
 	"github.com/gin-gonic/gin"
 )

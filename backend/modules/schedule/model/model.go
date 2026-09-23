@@ -2,13 +2,15 @@ package model
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DoctorSchedule struct {
-	ID string `bson:"_id,omitempty" json:"id"`
+	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 
-	DoctorID string `bson:"doctor_id" json:"doctor_id"`
-	ClinicID string `bson:"clinic_id" json:"clinic_id"`
+	DoctorID primitive.ObjectID `bson:"doctor_id" json:"doctor_id"`
+	ClinicID primitive.ObjectID `bson:"clinic_id" json:"clinic_id"`
 
 	DayOfWeek string `bson:"day_of_week" json:"day_of_week"`
 

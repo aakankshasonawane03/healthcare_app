@@ -1,8 +1,8 @@
 package patients
 
 import (
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
+	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/patients/handler"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/patients/repository"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/patients/service"

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gin-gonic/gin"
 )
 
 var publicKey *rsa.PublicKey

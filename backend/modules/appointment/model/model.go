@@ -2,15 +2,16 @@ package model
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Appointment struct {
+	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 
-	ID string `bson:"_id,omitempty" json:"id"`
+	DoctorID primitive.ObjectID `bson:"doctor_id" json:"doctor_id"`
 
-	DoctorID string `bson:"doctor_id" json:"doctor_id"`
-
-	PatientID string `bson:"patient_id" json:"patient_id"`
+	PatientID primitive.ObjectID `bson:"patient_id" json:"patient_id"`
 
 	AppointmentDate time.Time `bson:"appointment_date" json:"appointment_date"`
 

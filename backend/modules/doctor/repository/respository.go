@@ -52,10 +52,18 @@ func ensureDoctorCollection(collection *mongo.Collection) error {
 
 // Create Doctor
 func (r *doctorRepository) Create(ctx context.Context, doctor *model.Doctor) error {
+	result, err := r.collection.InsertOne(ctx, doctor)
+	if err != nil {
+		log.Printf("ERROR: failed to insert doctor: %v", err)
+		return err
+	}
 
-	_, err := r.collection.InsertOne(ctx, doctor)
+	log.Printf("Doctor inserted successfully")
+	log.Printf("Database: %s", r.collection.Database().Name())
+	log.Printf("Collection: %s", r.collection.Name())
+	log.Printf("Inserted ID: %v", result.InsertedID)
 
-	return err
+	return nil
 }
 
 // Get All Doctors
@@ -63,17 +71,23 @@ func (r *doctorRepository) GetAll(ctx context.Context) ([]model.Doctor, error) {
 
 	var doctors []model.Doctor
 
-	cursor, err := r.collection.Find(ctx, bson.M{})
+	log.Printf("Reading doctors from database: %s", r.collection.Database().Name())
+	log.Printf("Reading doctors from collection: %s", r.collection.Name())
 
+	cursor, err := r.collection.Find(ctx, bson.M{})
 	if err != nil {
+		log.Printf("ERROR: failed to get doctors: %v", err)
 		return nil, err
 	}
 
 	defer cursor.Close(ctx)
 
 	if err := cursor.All(ctx, &doctors); err != nil {
+		log.Printf("ERROR: failed to decode doctors: %v", err)
 		return nil, err
 	}
+
+	log.Printf("Doctors found: %d", len(doctors))
 
 	return doctors, nil
 }

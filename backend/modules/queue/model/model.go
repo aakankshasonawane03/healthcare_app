@@ -1,4 +1,4 @@
-package queuemodel
+package model
 
 import (
 	"time"
