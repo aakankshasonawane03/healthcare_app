@@ -45,6 +45,14 @@ type LoginRequest struct {
 }
 
 // ------------------------------------------------------------
+// Refresh token request
+// ------------------------------------------------------------
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+// ------------------------------------------------------------
 // Register
 // ------------------------------------------------------------
 
@@ -162,6 +170,7 @@ func (h *AuthController) Login(
 
 	var request LoginRequest
 
+	// Parse request.
 	if err := c.ShouldBindJSON(&request); err != nil {
 
 		c.JSON(
@@ -176,20 +185,247 @@ func (h *AuthController) Login(
 		return
 	}
 
+	// Clean email.
 	request.Email = strings.ToLower(
 		strings.TrimSpace(
 			request.Email,
 		),
 	)
 
+	// Clean password.
 	request.Password = strings.TrimSpace(
 		request.Password,
 	)
 
-	token, user, err := h.service.Login(
+	// --------------------------------------------------------
+	// Login
+	// --------------------------------------------------------
+	//
+	// OLD:
+	//
+	// token, user, err := h.service.Login(...)
+	//
+	// NEW:
+	//
+	// accessToken, refreshToken, user, err := ...
+	//
+
+	accessToken, refreshToken, user, err := h.service.Login(
 		c.Request.Context(),
 		request.Email,
 		request.Password,
+	)
+
+	if err != nil {
+
+		c.JSON(
+			http.StatusUnauthorized,
+			gin.H{
+				"success": false,
+				"message": err.Error(),
+			},
+		)
+
+		return
+	}
+
+	// --------------------------------------------------------
+	// Response
+	// --------------------------------------------------------
+
+	c.JSON(
+		http.StatusOK,
+		gin.H{
+			"success": true,
+			"message": "Login successful",
+
+			"access_token": accessToken,
+
+			"refresh_token": refreshToken,
+
+			"token_type": "Bearer",
+
+			"expires_in": 900,
+
+			"user": gin.H{
+				"id":         user.ID.Hex(),
+				"name":       user.Name,
+				"email":      user.Email,
+				"role":       user.Role,
+				"is_active":  user.IsActive,
+				"created_at": user.CreatedAt,
+				"updated_at": user.UpdatedAt,
+			},
+		},
+	)
+}
+
+// ------------------------------------------------------------
+// Refresh Access Token
+// ------------------------------------------------------------
+//
+// Endpoint:
+//
+// POST /api/auth/refresh
+//
+// Request:
+//
+// {
+//     "refresh_token": "......"
+// }
+//
+// Response:
+//
+// {
+//     "access_token": "......",
+//     "token_type": "Bearer",
+//     "expires_in": 900
+// }
+//
+// ------------------------------------------------------------
+
+func (h *AuthController) RefreshToken(
+	c *gin.Context,
+) {
+
+	var request RefreshTokenRequest
+
+	// Parse request.
+	if err := c.ShouldBindJSON(&request); err != nil {
+
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{
+				"success": false,
+				"message": "Invalid request body",
+				"error":   err.Error(),
+			},
+		)
+
+		return
+	}
+
+	// Clean refresh token.
+	request.RefreshToken = strings.TrimSpace(
+		request.RefreshToken,
+	)
+
+	// Validate.
+	if request.RefreshToken == "" {
+
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{
+				"success": false,
+				"message": "Refresh token is required",
+			},
+		)
+
+		return
+	}
+
+	// --------------------------------------------------------
+	// Ask service to validate refresh token
+	// and generate a new access token.
+	// --------------------------------------------------------
+
+	newAccessToken, err := h.service.RefreshAccessToken(
+		c.Request.Context(),
+		request.RefreshToken,
+	)
+
+	if err != nil {
+
+		c.JSON(
+			http.StatusUnauthorized,
+			gin.H{
+				"success": false,
+				"message": err.Error(),
+			},
+		)
+
+		return
+	}
+
+	// --------------------------------------------------------
+	// Return new access token.
+	// --------------------------------------------------------
+
+	c.JSON(
+		http.StatusOK,
+		gin.H{
+			"success": true,
+			"message": "Access token refreshed successfully",
+
+			"access_token": newAccessToken,
+
+			"token_type": "Bearer",
+
+			"expires_in": 900,
+		},
+	)
+}
+
+// ------------------------------------------------------------
+// Logout
+// ------------------------------------------------------------
+//
+// Endpoint:
+//
+// POST /api/auth/logout
+//
+// Request:
+//
+// {
+//     "refresh_token": "......"
+// }
+//
+// ------------------------------------------------------------
+
+func (h *AuthController) Logout(
+	c *gin.Context,
+) {
+
+	var request RefreshTokenRequest
+
+	// Parse request.
+	if err := c.ShouldBindJSON(&request); err != nil {
+
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{
+				"success": false,
+				"message": "Invalid request body",
+				"error":   err.Error(),
+			},
+		)
+
+		return
+	}
+
+	// Clean token.
+	request.RefreshToken = strings.TrimSpace(
+		request.RefreshToken,
+	)
+
+	// Validate.
+	if request.RefreshToken == "" {
+
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{
+				"success": false,
+				"message": "Refresh token is required",
+			},
+		)
+
+		return
+	}
+
+	// Revoke refresh token.
+	err := h.service.Logout(
+		c.Request.Context(),
+		request.RefreshToken,
 	)
 
 	if err != nil {
@@ -209,17 +445,7 @@ func (h *AuthController) Login(
 		http.StatusOK,
 		gin.H{
 			"success": true,
-			"message": "Login successful",
-			"token":   token,
-			"user": gin.H{
-				"id":         user.ID.Hex(),
-				"name":       user.Name,
-				"email":      user.Email,
-				"role":       user.Role,
-				"is_active":  user.IsActive,
-				"created_at": user.CreatedAt,
-				"updated_at": user.UpdatedAt,
-			},
+			"message": "Logout successful",
 		},
 	)
 }
@@ -232,7 +458,9 @@ func (h *AuthController) GetMe(
 	c *gin.Context,
 ) {
 
-	userID := c.GetString("user_id")
+	userID := c.GetString(
+		"user_id",
+	)
 
 	if userID == "" {
 
