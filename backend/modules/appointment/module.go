@@ -1,7 +1,10 @@
 package appointment
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
+
 
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
@@ -29,18 +32,9 @@ func (m *Module) Name() string {
 }
 
 func (m *Module) Init(ctx *module.ModuleContext) error {
-
-	// =====================================================
-	// MongoDB Collections
-	// =====================================================
-
 	appointmentCollection := ctx.DB.Collection("appointments")
 	doctorCollection := ctx.DB.Collection("doctors")
 	patientCollection := ctx.DB.Collection("patients")
-
-	// =====================================================
-	// Repositories
-	// =====================================================
 
 	appointmentRepo := appointmentRepository.NewAppointmentRepository(
 		appointmentCollection,
@@ -54,15 +48,10 @@ func (m *Module) Init(ctx *module.ModuleContext) error {
 		patientCollection,
 	)
 
-	// =====================================================
-	// Notification Service
-	// =====================================================
-
-	notificationSvc := ctx.NotificationService
-
-	// =====================================================
-	// Appointment Service
-	// =====================================================
+	notificationSvc, ok := ctx.Services["notification"].(*notificationService.Service)
+	if !ok {
+		return fmt.Errorf("notification service is not available")
+	}
 
 	appointmentSvc := appointmentService.NewAppointmentService(
 		appointmentRepo,
@@ -71,17 +60,10 @@ func (m *Module) Init(ctx *module.ModuleContext) error {
 		notificationSvc,
 	)
 
-	// =====================================================
-	// Handler
-	// =====================================================
-
-	m.handler = appointmentHandler.NewAppointmentHandler(
-		appointmentSvc,
-	)
+	m.handler = appointmentHandler.NewAppointmentHandler(appointmentSvc)
 
 	return nil
 }
-
 func (m *Module) RegisterRoutes(
 	r *gin.RouterGroup,
 ) {

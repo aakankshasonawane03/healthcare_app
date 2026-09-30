@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/cronnotification"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/config"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/config/database"
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/cronnotification"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/events"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
@@ -18,36 +18,43 @@ import (
 func main() {
 
 	// ============================================================
-	// CONFIG
+	// LOAD CONFIG
 	// ============================================================
 
 	cfg := config.Load()
 
 	// ============================================================
-	// DATABASE
+	// CONNECT MONGODB
 	// ============================================================
 
 	db := database.Connect(cfg)
 
 	// ============================================================
-	// EVENT BUS
+	// INITIALIZE EVENT BUS
 	// ============================================================
 
 	bus := events.New()
 
 	// ============================================================
-	// FIREBASE
+	// INITIALIZE FIREBASE
 	// ============================================================
 
 	firebaseClient, err := config.InitFirebase()
+
+	go cronnotification.Start()
+
+
 	if err != nil {
-		log.Fatalf("❌ Failed to initialize Firebase: %v", err)
+		log.Fatalf(
+			"❌ Failed to initialize Firebase: %v",
+			err,
+		)
 	}
 
-	// log.Println("🔥 Firebase initialized successfully")
+	log.Println("🔥 Firebase initialized successfully")
 
 	// ============================================================
-	// MODULE CONTEXT
+	// CREATE MODULE CONTEXT
 	// ============================================================
 
 	ctx := &module.ModuleContext{
@@ -64,11 +71,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
-
-	r.SetTrustedProxies([]string{
-		"127.0.0.1",
-		"::1",
-	})
+	r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 
 	r.Use(
 		middleware.Recovery(),
@@ -88,29 +91,20 @@ func main() {
 		loader.Register(m)
 	}
 
-	// Initialize all modules
+	// ============================================================
+	// INITIALIZE MODULES
+	// ============================================================
+
 	loader.InitAll(ctx)
 
 	// ============================================================
-	// TEST CRON
-	// ============================================================
-
-	log.Println("⏰ Starting test cron...")
-
-	cronJob := cronnotification.StartTestCron()
-
-	if cronJob != nil {
-		defer cronJob.Stop()
-	}
-
-	// ============================================================
-	// ROUTES
+	// REGISTER ROUTES
 	// ============================================================
 
 	loader.SetupRoutes(r)
 
 	// ============================================================
-	// SERVER
+	// START SERVER
 	// ============================================================
 
 	log.Printf("🚀 Server running on :%s", cfg.Port)

@@ -1,17 +1,16 @@
 package dto
 
+// RegisterDTO represents the request body for user registration.
+type RegisterDTO struct {
+	FirstName string `json:"first_name" binding:"required"`
+	LastName  string `json:"last_name" binding:"required"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required,min=6"`
+	Role      string `json:"role" binding:"required"`
+}
+
+// LoginDTO represents the request body for user login.
 type LoginDTO struct {
-    Email    string `json:"email" binding:"required,email"`
-    Password string `json:"password" binding:"required"`
-}
-
-type RefreshTokenDTO struct {
-    RefreshToken string `json:"refresh_token" binding:"required"`
-}
-
-type TokenResponseDTO struct {
-    AccessToken  string `json:"access_token"`
-    RefreshToken string `json:"refresh_token"`
-    TokenType    string `json:"token_type"`
-    ExpiresIn    int64  `json:"expires_in"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
 }

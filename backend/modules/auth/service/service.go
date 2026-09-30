@@ -35,7 +35,6 @@ const (
 )
 
 type AuthService interface {
-
 	Register(
 		ctx context.Context,
 		user *model.User,
@@ -161,156 +160,218 @@ func (s *authService) Register(
 // Previously it returned only:
 //
 // access token + user
-//
-
 func (s *authService) Login(
-    ctx context.Context,
-    email string,
-    password string,
+	ctx context.Context,
+	email string,
+	password string,
 ) (
-    string,
-    string,
-    *model.User,
-    error,
+	string,
+	string,
+	*model.User,
+	error,
 ) {
+	// 1. Find user by email.
+	user, err := s.repository.FindByEmail(
+		ctx,
+		strings.TrimSpace(email),
+	)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return "", "", nil, errors.New("invalid email or password")
+		}
 
-    user, err := s.repository.FindByEmail(
-        ctx,
-        email,
-    )
+		return "", "", nil, err
+	}
 
-    if err != nil {
-        if errors.Is(err, mongo.ErrNoDocuments) {
-            return "", "", nil, errors.New(
-                "invalid email or password",
-            )
-        }
+	if user == nil {
+		return "", "", nil, errors.New("invalid email or password")
+	}
 
-        return "", "", nil, err
-    }
+	// 2. Check whether the account is active.
+	if !user.IsActive {
+		return "", "", nil, errors.New("user account is inactive")
+	}
 
-    if !user.IsActive {
-        return "", "", nil, errors.New(
-            "user account is inactive",
-        )
-    }
+	// 3. Compare the submitted password with
+	// the bcrypt password stored in MongoDB.
+	err = bcrypt.CompareHashAndPassword(
+		[]byte(user.Password),
+		[]byte(password),
+	)
+	if err != nil {
+		return "", "", nil, errors.New("invalid email or password")
+	}
 
-    err = bcrypt.CompareHashAndPassword(
-        []byte(user.Password),
-        []byte(password),
-    )
+	// 4. Generate access token.
+	accessToken, err := generateJWT(user)
+	if err != nil {
+		return "", "", nil, err
+	}
 
-    if err != nil {
-        return "", "", nil, errors.New(
-            "invalid email or password",
-        )
-    }
+	// 5. Generate refresh token.
+	refreshToken, err := generateRefreshToken()
+	if err != nil {
+		return "", "", nil, err
+	}
 
-    // Access token
-    accessToken, err := generateJWT(user)
-    if err != nil {
-        return "", "", nil, err
-    }
+	// 6. Store the refresh token in MongoDB.
+	// Only its hash is stored by the repository.
+	err = s.repository.CreateRefreshToken(
+		ctx,
+		refreshToken,
+		user.ID,
+		time.Now().Add(RefreshTokenDuration),
+	)
+	if err != nil {
+		return "", "", nil, err
+	}
 
-    // Refresh token
-    refreshToken, err := generateRefreshToken()
-    if err != nil {
-        return "", "", nil, err
-    }
-
-    // Refresh token expiry
-    refreshTokenExpiresAt := time.Now().Add(
-        RefreshTokenDuration,
-    )
-
-    // Store raw token.
-    // Repository hashes it before storing.
-    err = s.repository.CreateRefreshToken(
-        ctx,
-        refreshToken,
-        user.ID,
-        refreshTokenExpiresAt,
-    )
-
-    if err != nil {
-        return "", "", nil, err
-    }
-
-    return accessToken,
-        refreshToken,
-        user,
-        nil
+	// 7. Return access token, refresh token and user.
+	return accessToken, refreshToken, user, nil
 }
+
 // ============================================================
 // REFRESH ACCESS TOKEN
 // ============================================================
 
 func (s *authService) RefreshAccessToken(
-    ctx context.Context,
-    refreshToken string,
-) (string, error) {
+	ctx context.Context,
+	refreshToken string,
+) (
+	string,
+	error,
+) {
 
-    refreshToken = strings.TrimSpace(refreshToken)
+	// --------------------------------------------------------
+	// 1. Check refresh token
+	// --------------------------------------------------------
 
-    if refreshToken == "" {
-        return "", errors.New(
-            "refresh token is required",
-        )
-    }
+	refreshToken = strings.TrimSpace(
+		refreshToken,
+	)
 
-    userID,
-    expiresAt,
-    revoked,
-    err := s.repository.FindRefreshToken(
-        ctx,
-        refreshToken,
-    )
+	if refreshToken == "" {
 
-    if err != nil {
-        return "", errors.New(
-            "invalid refresh token",
-        )
-    }
+		return "",
+			errors.New(
+				"refresh token is required",
+			)
+	}
 
-    if revoked {
-        return "", errors.New(
-            "refresh token has been revoked",
-        )
-    }
+	// --------------------------------------------------------
+	// 2. Hash received refresh token
+	// --------------------------------------------------------
 
-    if time.Now().After(expiresAt) {
-        return "", errors.New(
-            "refresh token has expired",
-        )
-    }
+	tokenHash := hashRefreshToken(
+		refreshToken,
+	)
 
-    user, err := s.repository.FindByID(
-        ctx,
-        userID,
-    )
+	// --------------------------------------------------------
+	// 3. Find token in MongoDB
+	// --------------------------------------------------------
 
-    if err != nil {
-        if errors.Is(err, mongo.ErrNoDocuments) {
-            return "", errors.New(
-                "user not found",
-            )
-        }
+	userID,
+		expiresAt,
+		revoked,
+		err := s.repository.FindRefreshToken(
+		ctx,
+		tokenHash,
+	)
 
-        return "", err
-    }
+	if err != nil {
 
-    if !user.IsActive {
-        return "", errors.New(
-            "user account is inactive",
-        )
-    }
+		if errors.Is(
+			err,
+			mongo.ErrNoDocuments,
+		) {
 
-    newAccessToken, err := generateJWT(user)
-    if err != nil {
-        return "", err
-    }
+			return "",
+				errors.New(
+					"invalid refresh token",
+				)
+		}
 
-    return newAccessToken, nil
+		return "",
+			err
+	}
+
+	// --------------------------------------------------------
+	// 4. Check revoked
+	// --------------------------------------------------------
+
+	if revoked {
+
+		return "",
+			errors.New(
+				"refresh token has been revoked",
+			)
+	}
+
+	// --------------------------------------------------------
+	// 5. Check expiry
+	// --------------------------------------------------------
+
+	if time.Now().After(expiresAt) {
+
+		return "",
+			errors.New(
+				"refresh token has expired",
+			)
+	}
+
+	// --------------------------------------------------------
+	// 6. Find user
+	// --------------------------------------------------------
+
+	user, err := s.repository.FindByID(
+		ctx,
+		userID,
+	)
+
+	if err != nil {
+
+		if errors.Is(
+			err,
+			mongo.ErrNoDocuments,
+		) {
+
+			return "",
+				errors.New(
+					"user not found",
+				)
+		}
+
+		return "",
+			err
+	}
+
+	// --------------------------------------------------------
+	// 7. Check user status
+	// --------------------------------------------------------
+
+	if !user.IsActive {
+
+		return "",
+			errors.New(
+				"user account is inactive",
+			)
+	}
+
+	// --------------------------------------------------------
+	// 8. Generate NEW access token
+	// --------------------------------------------------------
+
+	newAccessToken, err := generateJWT(
+		user,
+	)
+
+	if err != nil {
+
+		return "",
+			err
+	}
+
+	return newAccessToken, nil
 }
 
 // ============================================================
@@ -318,28 +379,48 @@ func (s *authService) RefreshAccessToken(
 // ============================================================
 
 func (s *authService) Logout(
-    ctx context.Context,
-    refreshToken string,
+	ctx context.Context,
+	refreshToken string,
 ) error {
 
-    refreshToken = strings.TrimSpace(refreshToken)
+	refreshToken = strings.TrimSpace(
+		refreshToken,
+	)
 
-    if refreshToken == "" {
-        return errors.New(
-            "refresh token is required",
-        )
-    }
+	if refreshToken == "" {
 
-    err := s.repository.RevokeRefreshToken(
-        ctx,
-        refreshToken,
-    )
+		return errors.New(
+			"refresh token is required",
+		)
+	}
 
-    if err != nil {
-        return err
-    }
+	// Hash the received token.
+	tokenHash := hashRefreshToken(
+		refreshToken,
+	)
 
-    return nil
+	// Revoke token in MongoDB.
+	err := s.repository.RevokeRefreshToken(
+		ctx,
+		tokenHash,
+	)
+
+	if err != nil {
+
+		if errors.Is(
+			err,
+			mongo.ErrNoDocuments,
+		) {
+
+			return errors.New(
+				"invalid refresh token",
+			)
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // ============================================================
@@ -412,7 +493,6 @@ func generateJWT(
 // Refresh token is NOT a JWT.
 //
 // It is a cryptographically random string.
-//
 func generateRefreshToken() (
 	string,
 	error,
@@ -445,14 +525,16 @@ func generateRefreshToken() (
 // We store only the hash in MongoDB.
 //
 // Actual token:
-//     abc123...
+//
+//	abc123...
 //
 // SHA256:
-//     xyz789...
+//
+//	xyz789...
 //
 // MongoDB stores:
-//     xyz789...
 //
+//	xyz789...
 func hashRefreshToken(
 	token string,
 ) string {

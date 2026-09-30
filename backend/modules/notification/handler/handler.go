@@ -193,7 +193,7 @@ func (h *Handler) MarkAllAsRead(c *gin.Context) {
 }
 
 // Delete notification
-func (h *Handler) Delete(c *gin.Context) {
+func (h *Handler) DeleteNotification(c *gin.Context) {
 	userID := c.GetString("userId")
 
 	if userID == "" {
@@ -204,9 +204,9 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	notificationID := c.Param("id")
+	id := c.Param("id")
 
-	if notificationID == "" {
+	if id == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": "Notification ID is required",
@@ -216,7 +216,7 @@ func (h *Handler) Delete(c *gin.Context) {
 
 	err := h.service.DeleteNotification(
 		c.Request.Context(),
-		notificationID,
+		id,
 		userID,
 	)
 

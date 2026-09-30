@@ -18,7 +18,7 @@ type AuthController struct {
 func NewAuthController(
 	authService service.AuthService,
 ) *AuthController {
-
+ 
 	return &AuthController{
 		service: authService,
 	}

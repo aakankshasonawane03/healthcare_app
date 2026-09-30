@@ -261,6 +261,10 @@ func (s *Service) MarkAllAsRead(
 // =====================================================
 // DELETE NOTIFICATION
 // =====================================================
+// Delete notification
+// =====================================================
+// DELETE NOTIFICATION
+// =====================================================
 
 func (s *Service) DeleteNotification(
 	ctx context.Context,
@@ -300,7 +304,6 @@ func (s *Service) DeleteNotification(
 
 	return nil
 }
-
 // =====================================================
 // REGISTER FCM DEVICE TOKEN
 // =====================================================

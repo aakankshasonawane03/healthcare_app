@@ -2,7 +2,7 @@ package middleware
 
 import "github.com/gin-gonic/gin"
 
-func PrescriptionMiddleware() gin.HandlerFunc {
+func PrescriptionMiddleware() func(*gin.Context) {
 	return func(c *gin.Context) {
 		// example middleware logic
 		c.Next()

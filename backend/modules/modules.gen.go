@@ -27,6 +27,7 @@ func LoadModules() []module.Module {
 		Consultation.NewModule(),
 		medicalrecord.NewModule(),
 		prescription.NewModule(),
-		schedule.NewModule(),
+		schedule.NewModule(),'
+		notification.NewModule(),
 	}
 }

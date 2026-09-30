@@ -1,12 +1,14 @@
 package auth
 
 import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/auth/handler"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/auth/repository"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/auth/service"
-
-	"github.com/gin-gonic/gin"
 )
 
 const ModuleName = "auth"
@@ -31,16 +33,16 @@ func (m *Module) Init(ctx *module.ModuleContext) error {
 	// Refresh tokens collection
 	refreshTokenCollection := ctx.DB.Collection("refresh_tokens")
 
-	// Repository
+	// Create repository
 	repo := repository.NewUserRepository(
 		userCollection,
 		refreshTokenCollection,
 	)
 
-	// Service
+	// Create auth service
 	authService := service.NewAuthService(repo)
 
-	// Handler
+	// Create auth controller
 	m.handler = handler.NewAuthController(authService)
 
 	return nil
@@ -48,36 +50,49 @@ func (m *Module) Init(ctx *module.ModuleContext) error {
 
 func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
 
-	// Module root
+	// =========================
+	// AUTH MODULE ROOT
+	// =========================
 	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": ModuleName + " module working 🚀",
+		c.JSON(http.StatusOK, gin.H{
+			"module":  ModuleName,
+			"message": "Auth module is working",
+			"success": true,
 		})
 	})
 
-	// Health check
+	// =========================
+	// AUTH HEALTH CHECK
+	// =========================
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "ok",
-			"module": ModuleName,
+		c.JSON(http.StatusOK, gin.H{
+			"module":  ModuleName,
+			"status":  "healthy",
+			"message": "Auth service is running",
+			"success": true,
 		})
 	})
 
 	// =========================
-	// Public Authentication Routes
+	// REGISTER
 	// =========================
-
-	// Register
 	r.POST("/register", m.handler.Register)
 
-	// Login
+	// =========================
+	// LOGIN
+	// =========================
 	r.POST("/login", m.handler.Login)
 
-	// Refresh access token
+	// =========================
+	// REFRESH ACCESS TOKEN
+	// =========================
 	r.POST("/refresh", m.handler.RefreshToken)
 
-	// Logout
+	// =========================
+	// LOGOUT
+	// =========================
 	r.POST("/logout", m.handler.Logout)
 }
 
+// Make sure Module implements module.Module
 var _ module.Module = (*Module)(nil)

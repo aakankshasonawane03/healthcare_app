@@ -12,10 +12,14 @@ func InitFirebase() (*messaging.Client, error) {
 	ctx := context.Background()
 
 	opt := option.WithCredentialsFile(
-		"C:\\Users\\suhas\\OneDrive\\Desktop\\doctor sharkweb\\doctor\\backend\\firebase-service-account.json",
+		"firebase-service-account.json",
 	)
 
-	app, err := firebase.NewApp(ctx, nil, opt)
+	app, err := firebase.NewApp(
+		ctx,
+		nil,
+		opt,
+	)
 	if err != nil {
 		return nil, err
 	}

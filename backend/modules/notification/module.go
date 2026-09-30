@@ -1,83 +1,115 @@
 package notification
 
 import (
-	"github.com/gin-gonic/gin"
-
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/notification/handler"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/notification/service"
+	"github.com/gin-gonic/gin"
+	"net/http"
 )
+
+const ModuleName = "notification"
 
 type Module struct {
 	handler *handler.Handler
 	service *service.Service
 }
 
+// NewModule creates notification module
 func NewModule() *Module {
 	return &Module{}
 }
 
+// Name returns module name
 func (m *Module) Name() string {
-	return "notification"
+	return ModuleName
 }
 
+// Service returns notification service
+//
+// Other modules such as Appointment can use this service
+// for sending notifications.
 func (m *Module) Service() *service.Service {
 	return m.service
 }
 
-func (m *Module) Init(
-	ctx *module.ModuleContext,
-) error {
+// Init initializes notification module
+func (m *Module) Init(ctx *module.ModuleContext) error {
 
-	m.service = service.NewService(
-		ctx.FirebaseClient,
-	)
+	// Create notification service using Firebase client
+	m.service = service.NewService(ctx.FirebaseClient)
 
-	ctx.NotificationService = m.service
+	// Make notification service available to other modules
+	m.SetNotificationService(ctx)
 
-	m.handler = handler.NewHandler(
-		m.service,
-	)
+	// Create notification handler
+	m.handler = handler.NewHandler(m.service)
 
 	return nil
 }
 
-func (m *Module) RegisterRoutes(
-	router *gin.RouterGroup,
-) {
+// SetNotificationService exposes notification service
+// through ModuleContext.
+func (m *Module) SetNotificationService(ctx *module.ModuleContext) {
+	ctx.NotificationService = m.service
+}
 
-	router.POST(
+// RegisterRoutes registers notification APIs
+func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
+
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"module":  ModuleName,
+			"message": "Notification module is working",
+			"success": true,
+		})
+	})
+
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"module":  ModuleName,
+			"status":  "healthy",
+			"success": true,
+		})
+	})
+
+	protected := r.Group("/notifications")
+
+	protected.POST(
 		"/createnotification",
 		m.handler.Create,
 	)
 
-	router.GET(
+	protected.GET(
 		"/getnotifications",
 		m.handler.GetAll,
 	)
 
-	router.GET(
+	protected.GET(
 		"/unread",
 		m.handler.GetUnread,
 	)
 
-	router.POST(
+	protected.POST(
 		"/device-token",
 		m.handler.RegisterDeviceToken,
 	)
 
-	router.PUT(
+	protected.PUT(
 		"/:id/read",
 		m.handler.MarkAsRead,
 	)
 
-	router.PUT(
+	protected.PUT(
 		"/read-all",
 		m.handler.MarkAllAsRead,
 	)
 
-	router.DELETE(
+	protected.DELETE(
 		"/:id",
-		m.handler.Delete,
+		m.handler.DeleteNotification,
 	)
 }
+
+// Compile-time check
+var _ module.Module = (*Module)(nil)

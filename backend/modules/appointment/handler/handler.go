@@ -22,7 +22,7 @@ func NewAppointmentHandler(service service.AppointmentService) *AppointmentHandl
 
 
 // Create Appointment
-func (h *AppointmentHandler) CreateAppointment(c *gin.Context) {
+func (h *AppointmentHandler) CreateAppointment(c * gin.Context) {
 
 	var req dto.CreateAppointmentRequest
 

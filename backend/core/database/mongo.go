@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"log"
-	"net/url"
 	"time"
 
 	mg "go.mongodb.org/mongo-driver/mongo"
@@ -13,28 +12,9 @@ import (
 var Client *mg.Client
 var DB *mg.Database
 
-func defaultDatabaseName(uri string) string {
-	if uri == "" {
-		return "healthcare"
-	}
-
-	parsed, err := url.Parse(uri)
-	if err == nil && parsed.Path != "" && parsed.Path != "/" {
-		name := parsed.Path
-		if len(name) > 0 && name[0] == '/' {
-			name = name[1:]
-		}
-		if name != "" {
-			return name
-		}
-	}
-
-	return "healthcare"
-}
-
 func Connect(dbUri string) *mg.Database {
 	if dbUri == "" {
-		dbUri = "mongodb://localhost:27017/healthcare"
+		dbUri = "mongodb://localhost:27017"
 	}
 
 	ctx, cancel := context.WithTimeout(
@@ -55,9 +35,9 @@ func Connect(dbUri string) *mg.Database {
 	}
 
 	Client = client
-	DB = client.Database(defaultDatabaseName(dbUri))
+	DB = client.Database("healthcare")
 
-	log.Printf("MongoDB connected successfully to database: %s", defaultDatabaseName(dbUri))
+	log.Println("MongoDB connected successfully")
 
 	return DB
 }
