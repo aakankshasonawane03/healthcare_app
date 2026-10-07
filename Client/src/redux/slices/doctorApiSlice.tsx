@@ -1,6 +1,6 @@
 import { apiSlice } from "./apiSlice";
 
-const DOCTORS_URL = "/api/doctors";
+const DOCTORS_URL = "/api/doctor";
 
 
 

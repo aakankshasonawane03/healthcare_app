@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
@@ -53,25 +51,10 @@ func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
 	// =========================
 	// AUTH MODULE ROOT
 	// =========================
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"module":  ModuleName,
-			"message": "Auth module is working",
-			"success": true,
-		})
-	})
 
 	// =========================
 	// AUTH HEALTH CHECK
 	// =========================
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"module":  ModuleName,
-			"status":  "healthy",
-			"message": "Auth service is running",
-			"success": true,
-		})
-	})
 
 	// =========================
 	// REGISTER

@@ -1,7 +1,9 @@
 package doctor
 
 import (
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
+	"log"
+
+	// "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/doctor/handler"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/doctor/repository"
@@ -42,27 +44,28 @@ func (m *Module) Init(ctx *module.ModuleContext) error {
 
 func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
 
-	// Module test route
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": ModuleName + " module working 🚀",
-		})
-	})
+	// // Module test route
+	// r.GET("/", func(c *gin.Context) {
+	// 	c.JSON(200, gin.H{
+	// 		"message": ModuleName + " module working 🚀",
+	// 	})
+	// })
 
-	// Health check
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "ok",
-			"module": ModuleName,
-		})
-	})
+	// // Health check
+	// r.GET("/health", func(c *gin.Context) {
+	// 	c.JSON(200, gin.H{
+	// 		"status": "ok",
+	// 		"module": ModuleName,
+	// 	})
+	// })
+	log.Println("🔥 DOCTOR RegisterRoutes CALLED")
 
 	// Protected doctor routes
 	protected := r.Group("/doctors")
-	protected.Use(middleware.AuthMiddleware())
+	// protected.Use(middleware.AuthMiddleware())
 
 	protected.POST("/createdoctor", m.handler.CreateDoctor)
-	protected.GET("/listdoctors", m.handler.GetAllDoctors)
+	r.GET("/listdoctors", m.handler.GetAllDoctors)
 	protected.GET("/viewdoctor/:id", m.handler.GetDoctorByID)
 	protected.PUT("/updatedoctor/:id", m.handler.UpdateDoctor)
 	protected.DELETE("/deletedoctor/:id", m.handler.DeleteDoctor)
