@@ -19,7 +19,8 @@ import {
     View,
 } from "react-native";
 import { useDispatch } from "react-redux";
-import useRegisterMutation, { setCredentials } from "../../../redux/slices/authSlice";
+import  { setCredentials } from "../../../redux/slices/authSlice";
+import { useRegisterMutation } from "@/redux/slices/userApislices";
 
 export default function SignupForm() {
     const [name, setName] = useState("");
@@ -58,7 +59,7 @@ export default function SignupForm() {
         }
         const response = register({ name, email, password });
         console.log("response", response);
-        dispatch(setCredentials(response.data));
+        dispatch(setCredentials(response));
 
         router.replace("/main/dashboard");
     };
