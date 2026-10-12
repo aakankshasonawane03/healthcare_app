@@ -1,0 +1,10 @@
+tmp/
+*.exe
+*.log
+
+.env
+.env.*
+
+*firebase-adminsdk*.json
+*.pem
+firebase-service-account.json
