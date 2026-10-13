@@ -41,11 +41,11 @@ func NewCronNotification(
 
 func (c *CronNotification) Start() {
 
-	_, err := c.cron.AddFunc(
-		"*/1 * * * *",
-		c.sendAppointmentReminders,
-		fmt.Println("⏰ Appointment reminder cron registered"),
-	)
+	
+_, err := c.cron.AddFunc(
+    "*/1 * * * *",
+    c.sendAppointmentReminders,
+)
 
 	if err != nil {
 

@@ -5,15 +5,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/middleware"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
+	jobs "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/cronnotification"
 
 	appointmentHandler "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/appointment/handler"
 	appointmentRepository "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/appointment/repository"
 	appointmentService "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/appointment/service"
-
 	doctorRepository "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/doctor/repository"
+	notificationModule "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/notification"
 	patientRepository "github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/patients/repository"
 )
 
@@ -21,6 +21,7 @@ const ModuleName = "appointment"
 
 type Module struct {
 	handler *appointmentHandler.AppointmentHandler
+	cron    *jobs.CronNotification
 }
 
 func NewModule() *Module {
@@ -48,9 +49,9 @@ func (m *Module) Init(ctx *module.ModuleContext) error {
 		patientCollection,
 	)
 
-	notificationSvc, ok := ctx.Services["notification"].(*notificationService.Service)
-	if !ok {
-		return fmt.Errorf("notification service is not available")
+	notificationSvc := notificationModule.GetService()
+	if notificationSvc == nil {
+		return fmt.Errorf("notification service is not initialized")
 	}
 
 	appointmentSvc := appointmentService.NewAppointmentService(
@@ -62,16 +63,18 @@ func (m *Module) Init(ctx *module.ModuleContext) error {
 
 	m.handler = appointmentHandler.NewAppointmentHandler(appointmentSvc)
 
+	m.cron = jobs.NewCronNotification(
+		appointmentSvc,
+		notificationSvc,
+	)
+
+	go m.cron.Start()
+
 	return nil
 }
-func (m *Module) RegisterRoutes(
-	r *gin.RouterGroup,
-) {
 
-	// =====================================================
+func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
 	// Health APIs
-	// =====================================================
-
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": ModuleName + " module working 🚀",
@@ -85,41 +88,30 @@ func (m *Module) RegisterRoutes(
 		})
 	})
 
-	// =====================================================
-	// Protected Appointment Routes
-	// =====================================================
-
+	// Protected appointment routes
 	protected := r.Group("/appointments")
+	protected.Use(middleware.AuthMiddleware())
 
-	protected.Use(
-		middleware.AuthMiddleware(),
-	)
-
-	// Create
 	protected.POST(
 		"/createappointment",
 		m.handler.CreateAppointment,
 	)
 
-	// Get all
 	protected.GET(
 		"/list",
 		m.handler.GetAllAppointments,
 	)
 
-	// Get by ID
 	protected.GET(
 		"/view/:id",
 		m.handler.GetAppointmentByID,
 	)
 
-	// Update
 	protected.PUT(
 		"/update/:id",
 		m.handler.UpdateAppointment,
 	)
 
-	// Delete
 	protected.DELETE(
 		"/delete/:id",
 		m.handler.DeleteAppointment,

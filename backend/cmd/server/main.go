@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/cronnotification"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/config"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/config/database"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/events"
@@ -16,47 +15,24 @@ import (
 )
 
 func main() {
-
-	// ============================================================
 	// LOAD CONFIG
-	// ============================================================
-
 	cfg := config.Load()
 
-	// ============================================================
 	// CONNECT MONGODB
-	// ============================================================
-
 	db := database.Connect(cfg)
 
-	// ============================================================
 	// INITIALIZE EVENT BUS
-	// ============================================================
-
 	bus := events.New()
 
-	// ============================================================
 	// INITIALIZE FIREBASE
-	// ============================================================
-
 	firebaseClient, err := config.InitFirebase()
-
-	go cronnotification.Start()
-
-
 	if err != nil {
-		log.Fatalf(
-			"❌ Failed to initialize Firebase: %v",
-			err,
-		)
+		log.Fatalf("Failed to initialize Firebase: %v", err)
 	}
 
-	log.Println("🔥 Firebase initialized successfully")
+	log.Println("Firebase initialized successfully")
 
-	// ============================================================
 	// CREATE MODULE CONTEXT
-	// ============================================================
-
 	ctx := &module.ModuleContext{
 		DB:             db,
 		Config:         cfg,
@@ -64,10 +40,7 @@ func main() {
 		FirebaseClient: firebaseClient,
 	}
 
-	// ============================================================
-	// GIN
-	// ============================================================
-
+	// GIN SETUP
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
@@ -81,33 +54,21 @@ func main() {
 		middleware.RateLimit(),
 	)
 
-	// ============================================================
 	// MODULE LOADER
-	// ============================================================
-
 	loader := module.NewLoader()
 
 	for _, m := range modules.LoadModules() {
 		loader.Register(m)
 	}
 
-	// ============================================================
 	// INITIALIZE MODULES
-	// ============================================================
-
 	loader.InitAll(ctx)
 
-	// ============================================================
 	// REGISTER ROUTES
-	// ============================================================
-
 	loader.SetupRoutes(r)
 
-	// ============================================================
 	// START SERVER
-	// ============================================================
-
-	log.Printf("🚀 Server running on :%s", cfg.Port)
+	log.Printf("Server running on :%s", cfg.Port)
 
 	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatal(err)

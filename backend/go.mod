@@ -1,3 +1,4 @@
+module github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend
 
 go 1.26.0
 

@@ -1,11 +1,13 @@
 package notification
 
 import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/core/module"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/notification/handler"
 	"github.com/Sharkweb-IT-Park/sharkweb-mvp-base/backend/modules/notification/service"
-	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 const ModuleName = "notification"
@@ -15,46 +17,49 @@ type Module struct {
 	service *service.Service
 }
 
-// NewModule creates notification module
+// Package-level reference to the initialized notification service.
+// Other modules can access it using GetService().
+var notificationService *service.Service
+
+// NewModule creates notification module.
 func NewModule() *Module {
 	return &Module{}
 }
 
-// Name returns module name
+// Name returns module name.
 func (m *Module) Name() string {
 	return ModuleName
 }
 
-// Service returns notification service
-//
-// Other modules such as Appointment can use this service
-// for sending notifications.
+// Service returns this module's notification service.
 func (m *Module) Service() *service.Service {
 	return m.service
 }
 
-// Init initializes notification module
+// GetService returns the initialized notification service.
+//
+// Other modules such as Appointment can use this service
+// to send notifications.
+func GetService() *service.Service {
+	return notificationService
+}
+
+// Init initializes notification module.
 func (m *Module) Init(ctx *module.ModuleContext) error {
 
-	// Create notification service using Firebase client
+	// Create notification service using Firebase client.
 	m.service = service.NewService(ctx.FirebaseClient)
 
-	// Make notification service available to other modules
-	m.SetNotificationService(ctx)
+	// Make the service available through this package.
+	notificationService = m.service
 
-	// Create notification handler
+	// Create notification handler.
 	m.handler = handler.NewHandler(m.service)
 
 	return nil
 }
 
-// SetNotificationService exposes notification service
-// through ModuleContext.
-func (m *Module) SetNotificationService(ctx *module.ModuleContext) {
-	ctx.NotificationService = m.service
-}
-
-// RegisterRoutes registers notification APIs
+// RegisterRoutes registers notification APIs.
 func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
 
 	r.GET("/", func(c *gin.Context) {
@@ -111,5 +116,5 @@ func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
 	)
 }
 
-// Compile-time check
+// Compile-time check.
 var _ module.Module = (*Module)(nil)
